@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>ЛР3 - Завдання 2</title>
+    <style>
+        body {
+            background-color: #e8e8e8;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #555;
+        }
+    </style>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec3 aPosition;
+        uniform mat4 uModel;
+        uniform mat4 uView;
+        uniform mat4 uProjection;
+
+        void main() {
+            gl_Position = uProjection * uView * uModel * vec4(aPosition, 1.0);
+        }
+    </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+        uniform vec3 uColor;
+
+        void main() {
+            gl_FragColor = vec4(uColor, 1.0);
+        }
+    </script>
+
+    <script src="matrix.js"></script>
+    <script src="main.js"></script>
+</head>
+<body>
+    <h3>Завдання 2. Куб в перспективній проекції</h3>
+    <canvas id="glcanvas" width="640" height="480"></canvas>
+</body>
+</html>
