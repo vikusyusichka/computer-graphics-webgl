@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>ЛР8 - Тіні</title>
+    <style>
+        body {
+            background-color: #e8e8e8;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            font-size: 14px;
+        }
+        canvas {
+            border: 1px solid #555;
+        }
+        .panel {
+            margin: 6px;
+        }
+        .panel label {
+            margin: 0 8px;
+        }
+        input[type=range] {
+            width: 110px;
+            vertical-align: middle;
+        }
+    </style>
+
+    <script id="shadow-vs" type="x-shader/x-vertex">
+        attribute vec3 a_Position;
+        uniform mat4 u_LightMVP;
+
+        void main() {
+            gl_Position = u_LightMVP * vec4(a_Position, 1.0);
+        }
+    </script>
+
+    <script id="shadow-fs" type="x-shader/x-fragment">
+        precision mediump float;
+
+        void main() {
+            const vec4 bitShift = vec4(1.0, 256.0, 256.0 * 256.0, 256.0 * 256.0 * 256.0);
+            const vec4 bitMask = vec4(1.0 / 256.0, 1.0 / 256.0, 1.0 / 256.0, 0.0);
+            vec4 rgbaDepth = fract(gl_FragCoord.z * bitShift);
+            rgbaDepth -= rgbaDepth.gbaa * bitMask;
+            gl_FragColor = rgbaDepth;
+        }
+    </script>
+
+    <script id="scene-vs" type="x-shader/x-vertex">
+        attribute vec3 a_Position;
+        attribute vec3 a_Normal;
+        uniform mat4 u_MVP;
+        uniform mat4 u_Model;
+        uniform mat4 u_LightMVP;
+        varying vec4 v_PosFromLight;
+        varying vec3 v_Normal;
+        varying vec3 v_WorldPos;
+
+        void main() {
+            gl_Position = u_MVP * vec4(a_Position, 1.0);
+            v_PosFromLight = u_LightMVP * vec4(a_Position, 1.0);
+            v_Normal = mat3(u_Model) * a_Normal;
+            v_WorldPos = (u_Model * vec4(a_Position, 1.0)).xyz;
+        }
+    </script>
+
+    <script id="scene-fs" type="x-shader/x-fragment">
+        precision mediump float;
+        uniform sampler2D u_ShadowMap;
+        uniform vec3 u_Color;
+        uniform vec3 u_LightPos;
+        uniform bool u_UseShadows;
+        uniform float u_ShadowAlpha;
+        uniform float u_Bias;
+        varying vec4 v_PosFromLight;
+        varying vec3 v_Normal;
+        varying vec3 v_WorldPos;
+
+        float unpackDepth(vec4 rgba) {
+            const vec4 bitShift = vec4(1.0, 1.0 / 256.0, 1.0 / (256.0 * 256.0), 1.0 / (256.0 * 256.0 * 256.0));
+            return dot(rgba, bitShift);
+        }
+
+        float inShadow() {
+            vec3 p = v_PosFromLight.xyz / v_PosFromLight.w;
+            p = p * 0.5 + 0.5;
+            if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0) {
+                return 0.0;
+            }
+            float nearest = unpackDepth(texture2D(u_ShadowMap, p.xy));
+            return (p.z > nearest + u_Bias) ? 1.0 : 0.0;
+        }
+
+        void main() {
+            vec3 n = normalize(v_Normal);
+            vec3 l = normalize(u_LightPos - v_WorldPos);
+            float diffuse = max(dot(n, l), 0.0);
+            vec3 color = u_Color * (0.3 + 0.7 * diffuse);
+
+            if (u_UseShadows) {
+                color *= 1.0 - u_ShadowAlpha * inShadow();
+            }
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+
+    <script src="matrix.js"></script>
+    <script src="main.js"></script>
+</head>
+<body>
+    <h3>Лабораторна робота 8. Тіні (карта тіней)</h3>
+
+    <div class="panel">
+        <label>Кут світла <input type="range" id="lightAngle" min="0" max="360" value="40"></label>
+        <label>Висота <input type="range" id="lightHeight" min="2" max="10" step="0.5" value="6"></label>
+        <label><input type="checkbox" id="rotateLight"> Обертати світло</label>
+    </div>
+    <div class="panel">
+        <label><input type="checkbox" id="useShadows" checked> Тіні</label>
+        <label>Темність тіні <input type="range" id="shadowAlpha" min="0" max="1" step="0.05" value="0.55"> <span id="alphaVal"></span></label>
+        <label>Вигляд:
+            <select id="viewMode">
+                <option value="camera">З камери</option>
+                <option value="light">З джерела світла</option>
+            </select>
+        </label>
+    </div>
+
+    <canvas id="glcanvas" width="640" height="480"></canvas>
+</body>
+</html>
