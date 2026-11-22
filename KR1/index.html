@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>КР1 - Ініціали Ф.В.Б.</title>
+    <style>
+        body {
+            background-color: #e8e8e8;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            font-size: 14px;
+        }
+        canvas {
+            border: 1px solid #555;
+        }
+        .panel {
+            margin: 6px;
+        }
+        .panel label {
+            margin: 0 8px;
+        }
+        input[type=range] {
+            width: 110px;
+            vertical-align: middle;
+        }
+        input[type=color] {
+            vertical-align: middle;
+            width: 36px;
+            height: 22px;
+            padding: 0;
+            border: none;
+        }
+    </style>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec3 a_Position;
+        attribute vec3 a_Normal;
+        attribute float a_Height;
+        uniform mat4 u_MVP;
+        uniform mat4 u_Model;
+        varying vec3 v_Normal;
+        varying float v_Height;
+
+        void main() {
+            gl_Position = u_MVP * vec4(a_Position, 1.0);
+            v_Normal = mat3(u_Model) * a_Normal;
+            v_Height = a_Height;
+        }
+    </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+        uniform vec3 u_ColorTop;
+        uniform vec3 u_ColorBottom;
+        uniform vec3 u_LightDir;
+        varying vec3 v_Normal;
+        varying float v_Height;
+
+        void main() {
+            vec3 color = mix(u_ColorBottom, u_ColorTop, v_Height);
+            float diffuse = max(dot(normalize(v_Normal), normalize(u_LightDir)), 0.0);
+            gl_FragColor = vec4(color * (0.35 + 0.65 * diffuse), 1.0);
+        }
+    </script>
+
+    <script src="matrix.js"></script>
+    <script src="main.js"></script>
+</head>
+<body>
+    <h3>Контрольна робота 1. Ініціали Ф.В.Б.</h3>
+
+    <div class="panel">
+        <label>Фон <input type="color" id="bgColor" value="#1e2840"></label>
+        <label>Ф <input type="color" id="color0" value="#ff7a3d"></label>
+        <label>В <input type="color" id="color1" value="#3dd6ff"></label>
+        <label>Б <input type="color" id="color2" value="#c46bff"></label>
+        <label><input type="checkbox" id="gradient" checked> Градієнт</label>
+    </div>
+    <div class="panel">
+        <label>Анімація:
+            <select id="mode">
+                <option value="rotate">Обертання</option>
+                <option value="wave">Хвиля</option>
+                <option value="pulse">Пульсація</option>
+                <option value="none">Без анімації</option>
+            </select>
+        </label>
+        <label>Швидкість <input type="range" id="speed" min="0" max="3" step="0.1" value="1"> <span id="speedVal"></span></label>
+        <label><input type="checkbox" id="rainbow"> Зміна кольорів</label>
+    </div>
+
+    <canvas id="glcanvas" width="720" height="420"></canvas>
+</body>
+</html>
