@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>ЛР2 - Завдання 2</title>
+    <style>
+        body {
+            background-color: #e8e8e8;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #555;
+            cursor: crosshair;
+        }
+        .panel {
+            margin: 10px;
+        }
+        .panel select, .panel button {
+            margin: 0 6px;
+            padding: 3px 8px;
+        }
+    </style>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec2 aPosition;
+        attribute vec3 aColor;
+        varying vec3 vColor;
+
+        void main() {
+            gl_Position = vec4(aPosition, 0.0, 1.0);
+            gl_PointSize = 8.0;
+            vColor = aColor;
+        }
+    </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec3 vColor;
+
+        void main() {
+            gl_FragColor = vec4(vColor, 1.0);
+        }
+    </script>
+
+    <script src="main.js"></script>
+</head>
+<body>
+    <h3>Завдання 2. Очищення канваса та вибір кольорів</h3>
+
+    <div class="panel">
+        Колір точок:
+        <select id="pointColor">
+            <option value="0">Жовтий</option>
+            <option value="1">Червоний</option>
+            <option value="2">Зелений</option>
+            <option value="3">Синій</option>
+            <option value="4">Білий</option>
+            <option value="5">Чорний</option>
+        </select>
+
+        Колір фону:
+        <select id="bgColor">
+            <option value="0">Темно-синій</option>
+            <option value="1">Білий</option>
+            <option value="2">Сірий</option>
+            <option value="3">Світло-зелений</option>
+            <option value="4">Чорний</option>
+        </select>
+
+        <button id="clearBtn">Очистити</button>
+    </div>
+
+    <canvas id="glcanvas" width="640" height="480"></canvas>
+</body>
+</html>

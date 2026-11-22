@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>ЛР2 - Завдання 1</title>
+    <style>
+        body {
+            background-color: #e8e8e8;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #555;
+            cursor: crosshair;
+        }
+    </style>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec2 aPosition;
+
+        void main() {
+            gl_Position = vec4(aPosition, 0.0, 1.0);
+            gl_PointSize = 8.0;
+        }
+    </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        void main() {
+            gl_FragColor = vec4(1.0, 0.85, 0.2, 1.0);
+        }
+    </script>
+
+    <script src="main.js"></script>
+</head>
+<body>
+    <h3>Завдання 1. Точки за натисканням миші</h3>
+    <canvas id="glcanvas" width="640" height="480"></canvas>
+    <p id="info">Клікніть по канвасу</p>
+</body>
+</html>
