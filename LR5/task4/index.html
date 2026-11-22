@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>ЛР5 - Завдання 4</title>
+    <style>
+        body {
+            background-color: #e8e8e8;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+        }
+        .wrap {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+        canvas {
+            border: 1px solid #555;
+        }
+        .controls {
+            width: 260px;
+            text-align: left;
+        }
+        .controls div {
+            margin: 5px 0;
+        }
+        .controls input[type=range] {
+            width: 140px;
+            vertical-align: middle;
+        }
+        .controls span {
+            display: inline-block;
+            width: 34px;
+        }
+        h3 {
+            text-align: center;
+        }
+        fieldset {
+            margin-bottom: 6px;
+        }
+    </style>
+
+    <script id="phong-vs" type="x-shader/x-vertex">
+        attribute vec3 aPosition;
+        attribute vec3 aNormal;
+        uniform mat4 uModel;
+        uniform mat4 uView;
+        uniform mat4 uProjection;
+        varying vec3 vWorldPos;
+        varying vec3 vNormal;
+
+        void main() {
+            vec4 worldPos = uModel * vec4(aPosition, 1.0);
+            vWorldPos = worldPos.xyz;
+            vNormal = mat3(uModel) * aNormal;
+            gl_Position = uProjection * uView * worldPos;
+        }
+    </script>
+
+    <script id="phong-fs" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec3 vWorldPos;
+        varying vec3 vNormal;
+
+        uniform vec3 uLightPos;
+        uniform vec3 uLightColor;
+        uniform float uLightPower;
+        uniform vec3 uAmbient;
+        uniform vec3 uViewPos;
+        uniform vec3 uObjectColor;
+        uniform float uKa;
+        uniform float uKd;
+        uniform float uKs;
+        uniform float uShininess;
+        uniform bool uUseAtten;
+        uniform float uK;
+
+        void main() {
+            vec3 N = normalize(vNormal);
+            vec3 L = normalize(uLightPos - vWorldPos);
+            vec3 V = normalize(uViewPos - vWorldPos);
+            vec3 R = reflect(-L, N);
+
+            float att = 1.0;
+            if (uUseAtten) {
+                float d = length(uLightPos - vWorldPos);
+                att = 1.0 / (d + uK);
+            }
+            vec3 IL = uLightColor * uLightPower * att;
+
+            vec3 ambient = uKa * uAmbient * uObjectColor;
+            float cosQ = max(dot(N, L), 0.0);
+            vec3 diffuse = uKd * cosQ * IL * uObjectColor;
+            float spec = 0.0;
+            if (cosQ > 0.0) {
+                spec = pow(max(dot(R, V), 0.0), uShininess);
+            }
+            vec3 specular = uKs * spec * IL;
+
+            gl_FragColor = vec4(ambient + diffuse + specular, 1.0);
+        }
+    </script>
+
+    <script id="gouraud-vs" type="x-shader/x-vertex">
+        attribute vec3 aPosition;
+        attribute vec3 aNormal;
+        uniform mat4 uModel;
+        uniform mat4 uView;
+        uniform mat4 uProjection;
+
+        uniform vec3 uLightPos;
+        uniform vec3 uLightColor;
+        uniform float uLightPower;
+        uniform vec3 uAmbient;
+        uniform vec3 uViewPos;
+        uniform vec3 uObjectColor;
+        uniform float uKa;
+        uniform float uKd;
+        uniform float uKs;
+        uniform float uShininess;
+        uniform bool uUseAtten;
+        uniform float uK;
+
+        varying vec3 vColor;
+
+        void main() {
+            vec4 worldPos = uModel * vec4(aPosition, 1.0);
+            vec3 P = worldPos.xyz;
+            vec3 N = normalize(mat3(uModel) * aNormal);
+            vec3 L = normalize(uLightPos - P);
+            vec3 V = normalize(uViewPos - P);
+            vec3 R = reflect(-L, N);
+
+            float att = 1.0;
+            if (uUseAtten) {
+                att = 1.0 / (length(uLightPos - P) + uK);
+            }
+            vec3 IL = uLightColor * uLightPower * att;
+
+            vec3 ambient = uKa * uAmbient * uObjectColor;
+            float cosQ = max(dot(N, L), 0.0);
+            vec3 diffuse = uKd * cosQ * IL * uObjectColor;
+            float spec = 0.0;
+            if (cosQ > 0.0) {
+                spec = pow(max(dot(R, V), 0.0), uShininess);
+            }
+            vec3 specular = uKs * spec * IL;
+
+            vColor = ambient + diffuse + specular;
+            gl_Position = uProjection * uView * worldPos;
+        }
+    </script>
+
+    <script id="gouraud-fs" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec3 vColor;
+
+        void main() {
+            gl_FragColor = vec4(vColor, 1.0);
+        }
+    </script>
+
+    <script src="matrix.js"></script>
+    <script src="main.js"></script>
+</head>
+<body>
+    <h3>Завдання 4. Зміна параметрів освітлення</h3>
+    <div class="wrap">
+        <canvas id="glcanvas" width="640" height="480"></canvas>
+
+        <div class="controls">
+            <fieldset>
+                <legend>Джерело світла</legend>
+                <div>X <input type="range" id="lx" min="-5" max="5" step="0.1" value="2.5"> <span id="lxVal"></span></div>
+                <div>Y <input type="range" id="ly" min="-5" max="5" step="0.1" value="3"> <span id="lyVal"></span></div>
+                <div>Z <input type="range" id="lz" min="-5" max="5" step="0.1" value="3"> <span id="lzVal"></span></div>
+                <div>Колір
+                    <select id="lightColor">
+                        <option value="1,1,1">Білий</option>
+                        <option value="1,0.85,0.6">Теплий</option>
+                        <option value="1,0.3,0.3">Червоний</option>
+                        <option value="0.4,0.6,1">Синій</option>
+                        <option value="0.4,1,0.4">Зелений</option>
+                    </select>
+                </div>
+                <div>Сила <input type="range" id="power" min="0" max="8" step="0.1" value="1"> <span id="powerVal"></span></div>
+                <div><label><input type="checkbox" id="rotateLight"> Обертати навколо тора</label></div>
+                <div><label><input type="checkbox" id="atten"> Затухання 1/(d+K)</label></div>
+                <div>K <input type="range" id="kAtt" min="0" max="5" step="0.1" value="1"> <span id="kAttVal"></span></div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Матеріал</legend>
+                <div>ka <input type="range" id="ka" min="0" max="1" step="0.05" value="0.2"> <span id="kaVal"></span></div>
+                <div>kd <input type="range" id="kd" min="0" max="1" step="0.05" value="0.8"> <span id="kdVal"></span></div>
+                <div>ks <input type="range" id="ks" min="0" max="1" step="0.05" value="0.6"> <span id="ksVal"></span></div>
+                <div>n <input type="range" id="shin" min="1" max="128" step="1" value="32"> <span id="shinVal"></span></div>
+                <div>Колір
+                    <select id="objColor">
+                        <option value="0.9,0.45,0.1">Оранжевий</option>
+                        <option value="0.2,0.4,0.9">Синій</option>
+                        <option value="0.2,0.7,0.3">Зелений</option>
+                        <option value="0.8,0.8,0.8">Сірий</option>
+                    </select>
+                </div>
+            </fieldset>
+
+            <div>Затінення
+                <select id="shading">
+                    <option value="phong">Фонга</option>
+                    <option value="gouraud">Гуро</option>
+                </select>
+            </div>
+            <div><label><input type="checkbox" id="rotateObj" checked> Обертати тор</label></div>
+        </div>
+    </div>
+</body>
+</html>

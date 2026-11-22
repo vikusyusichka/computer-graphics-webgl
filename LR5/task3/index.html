@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>ЛР5 - Завдання 3</title>
+    <style>
+        body {
+            background-color: #e8e8e8;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #555;
+        }
+    </style>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec3 aPosition;
+        attribute vec3 aNormal;
+        uniform mat4 uModel;
+        uniform mat4 uView;
+        uniform mat4 uProjection;
+        varying vec3 vWorldPos;
+        varying vec3 vNormal;
+
+        void main() {
+            vec4 worldPos = uModel * vec4(aPosition, 1.0);
+            vWorldPos = worldPos.xyz;
+            vNormal = mat3(uModel) * aNormal;
+            gl_Position = uProjection * uView * worldPos;
+        }
+    </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec3 vWorldPos;
+        varying vec3 vNormal;
+
+        uniform vec3 uLightPos;
+        uniform vec3 uLightColor;
+        uniform vec3 uAmbient;
+        uniform vec3 uViewPos;
+        uniform vec3 uObjectColor;
+        uniform float uKa;
+        uniform float uKd;
+        uniform float uKs;
+        uniform float uShininess;
+
+        void main() {
+            vec3 N = normalize(vNormal);
+            vec3 L = normalize(uLightPos - vWorldPos);
+            vec3 V = normalize(uViewPos - vWorldPos);
+            vec3 R = reflect(-L, N);
+
+            vec3 ambient = uKa * uAmbient * uObjectColor;
+
+            float cosQ = max(dot(N, L), 0.0);
+            vec3 diffuse = uKd * cosQ * uLightColor * uObjectColor;
+
+            float spec = 0.0;
+            if (cosQ > 0.0) {
+                spec = pow(max(dot(R, V), 0.0), uShininess);
+            }
+            vec3 specular = uKs * spec * uLightColor;
+
+            gl_FragColor = vec4(ambient + diffuse + specular, 1.0);
+        }
+    </script>
+
+    <script src="matrix.js"></script>
+    <script src="main.js"></script>
+</head>
+<body>
+    <h3>Завдання 3. Освітлення за моделлю Фонга</h3>
+    <canvas id="glcanvas" width="640" height="480"></canvas>
+</body>
+</html>
