@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>ЛР4 - Ящик з кришкою</title>
+    <style>
+        body {
+            background-color: #e8e8e8;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #555;
+        }
+        p {
+            margin: 6px;
+        }
+    </style>
+
+    <script id="crate-vs" type="x-shader/x-vertex">
+        attribute vec3 a_coords;
+        attribute vec3 a_colors;
+        uniform mat4 u_RotY;
+        uniform mat4 u_RotX;
+        uniform mat4 u_Scale;
+        uniform mat4 u_Trans;
+        uniform mat4 u_Basis;
+        uniform mat4 u_Eye;
+        uniform mat4 u_Pers;
+        varying vec3 v_color;
+
+        void main() {
+            mat4 M = u_Trans * u_RotX * u_RotY * u_Scale;
+            mat4 V = u_Basis * u_Eye;
+            mat4 P = u_Pers;
+            mat4 MVP = P * V * M;
+            gl_Position = MVP * vec4(a_coords, 1.0);
+            v_color = a_colors;
+        }
+    </script>
+
+    <script id="crate-fs" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec3 v_color;
+
+        void main() {
+            gl_FragColor = vec4(v_color, 1.0);
+        }
+    </script>
+
+    <script id="lid-vs" type="x-shader/x-vertex">
+        attribute vec3 a_coords;
+        attribute vec3 a_colors;
+        uniform mat4 u_RotY;
+        uniform mat4 u_RotX;
+        uniform mat4 u_Trans;
+        uniform mat4 u_Basis;
+        uniform mat4 u_Eye;
+        uniform mat4 u_Pers;
+        uniform mat4 u_LidScale;
+        uniform mat4 u_LidOffset;
+        uniform mat4 u_LidOpen;
+        uniform mat4 u_LidHinge;
+        varying vec3 v_color;
+
+        void main() {
+            mat4 lid = u_LidHinge * u_LidOpen * u_LidOffset * u_LidScale;
+            mat4 M = u_Trans * u_RotX * u_RotY * lid;
+            mat4 V = u_Basis * u_Eye;
+            mat4 MVP = u_Pers * V * M;
+            gl_Position = MVP * vec4(a_coords, 1.0);
+            v_color = a_colors;
+        }
+    </script>
+
+    <script id="lid-fs" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec3 v_color;
+
+        void main() {
+            gl_FragColor = vec4(v_color * 0.9, 1.0);
+        }
+    </script>
+
+    <script src="main.js"></script>
+</head>
+<body>
+    <h3>Лабораторна робота 4. Ящик з кришкою</h3>
+    <canvas id="glcanvas" width="640" height="480"></canvas>
+    <p>Стрілки вліво / вправо - поворот ящика навколо осі Y, вгору / вниз - відкрити / закрити кришку</p>
+    <p id="info"></p>
+</body>
+</html>
