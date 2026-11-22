@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>ЛР6 - Затінення поверхонь</title>
+    <style>
+        body {
+            background-color: #e8e8e8;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            font-size: 14px;
+        }
+        canvas {
+            border: 1px solid #555;
+            cursor: grab;
+        }
+        .panel {
+            margin: 6px;
+        }
+        .panel label {
+            margin: 0 8px;
+        }
+        input[type=range] {
+            width: 120px;
+            vertical-align: middle;
+        }
+    </style>
+
+    <!-- ===== Вершинний шейдер ===== -->
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec3 a_coords;
+        attribute vec3 a_colors;
+        attribute vec3 a_normal;
+
+        // матриці моделі
+        uniform mat4 u_T;
+        uniform mat4 u_Rx;
+        uniform mat4 u_Ry;
+        // матриці камери і перспективи
+        uniform mat4 u_Basis;
+        uniform mat4 u_Eye;
+        uniform mat4 u_Pers;
+
+        varying vec3 v_normal;   // нормаль в системі координат камери
+        varying vec3 v_coords;   // положення точки в системі координат камери
+        varying vec3 v_color;
+
+        void main() {
+            mat4 M = u_T * u_Ry * u_Rx;
+            mat4 V = u_Basis * u_Eye;
+            mat4 MV = V * M;
+
+            gl_Position = u_Pers * MV * vec4(a_coords, 1.0);
+
+            // освітлення рахуємо в системі камери, тому туди ж переводимо
+            // і точку, і нормаль (масштабу немає, тому вистачає mat3)
+            v_coords = (MV * vec4(a_coords, 1.0)).xyz;
+            v_normal = mat3(MV) * a_normal;
+            v_color = a_colors;
+        }
+    </script>
+
+    <!-- ===== Фрагментний шейдер (затінення Фонга) ===== -->
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        uniform vec3 u_LightColor;     // c_l - колір джерела
+        uniform vec3 u_LightPosition;  // положення джерела (в системі камери)
+        uniform vec3 u_AmbientLight;   // c_a - фонове світло
+        uniform vec3 u_SpecColor;      // c_p - колір бліку
+        uniform float u_P;             // p - показник блискучості
+        uniform int u_Mode;            // 0 - дифузне, 1 - фонове + дифузне, 2 - Фонг
+
+        varying vec3 v_normal;
+        varying vec3 v_coords;
+        varying vec3 v_color;          // c_r - колір поверхні
+
+        void main() {
+            // після інтерполяції нормаль вже не одинична
+            vec3 n = normalize(v_normal);
+            // всередині вази бачимо зворотну сторону поверхні - розвертаємо нормаль
+            if (!gl_FrontFacing) {
+                n = -n;
+            }
+
+            vec3 l = normalize(u_LightPosition - v_coords); // напрям на джерело
+            vec3 e = normalize(-v_coords);                  // напрям на око (камера в 0,0,0)
+            vec3 r = -l + 2.0 * dot(l, n) * n;              // відбитий промінь
+
+            float nDotL = max(0.0, dot(n, l));
+
+            vec3 color;
+            if (u_Mode == 0) {
+                // дифузне затінення: c = c_r * c_l * max(0, n.l)
+                color = v_color * u_LightColor * nDotL;
+            } else if (u_Mode == 1) {
+                // додаємо фонове: c = c_r * (c_a + c_l * max(0, n.l))
+                color = v_color * (u_AmbientLight + u_LightColor * nDotL);
+            } else {
+                // Фонг: c = c_r * (c_a + c_l * max(0, n.l)) + c_l * c_p * max(0, e.r)^p
+                float highlight = 0.0;
+                if (nDotL > 0.0) {
+                    highlight = pow(max(0.0, dot(e, r)), u_P);
+                }
+                color = v_color * (u_AmbientLight + u_LightColor * nDotL)
+                      + u_LightColor * u_SpecColor * highlight;
+            }
+
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+
+    <script src="matrix.js"></script>
+    <script src="main.js"></script>
+</head>
+<body>
+    <h3>Лабораторна робота 6. Затінення поверхонь</h3>
+
+    <div class="panel">
+        <label>Затінення:
+            <select id="mode">
+                <option value="2">Фонга (фонове + дифузне + блік)</option>
+                <option value="1">Фонове + дифузне</option>
+                <option value="0">Тільки дифузне</option>
+            </select>
+        </label>
+        <label>p <input type="range" id="p" min="1" max="200" value="40"> <span id="pVal"></span></label>
+        <label><input type="checkbox" id="autoRotate" checked> Обертання</label>
+    </div>
+
+    <canvas id="glcanvas" width="640" height="480"></canvas>
+    <p>Затисніть ліву кнопку миші і рухайте, щоб повернути вазу</p>
+</body>
+</html>
