@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8">
+    <title>ЛР1 - Завдання 2</title>
+    <style>
+        body {
+            background-color: #e8e8e8;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #555;
+        }
+    </style>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec2 aPosition;
+        attribute vec3 aColor;
+        varying vec3 vColor;
+
+        void main() {
+            vColor = aColor;
+            gl_Position = vec4(aPosition, 0.0, 1.0);
+        }
+    </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec3 vColor;
+
+        void main() {
+            gl_FragColor = vec4(vColor, 1.0);
+        }
+    </script>
+
+    <script src="main.js"></script>
+</head>
+<body>
+    <h3>Завдання 2. Кольоровий трикутник</h3>
+    <canvas id="glcanvas" width="640" height="480"></canvas>
+</body>
+</html>
